@@ -10,5 +10,6 @@ This was created to be used with 6-stage migration flags
 1. `pip install requirements.txt`
 2. Rename `.env.example` to `.env`
 3. Replace the environment variables in `.env` with your values. Point it to a LaunchDarkly [6-stage migration flag](https://docs.launchdarkly.com/home/flag-types/migration-flags/creating/).
-4. `python main.py`
-5. Do a keyboard interrupt (ctrl/cmd + c) when you're ready for it to stop
+4. Ensure your flag is set to serve `shadow` to 100% of your default cohort, with no additional cohorts on top
+5. `python main.py`
+6. Do a keyboard interrupt (ctrl/cmd + c) when you're ready for it to stop
