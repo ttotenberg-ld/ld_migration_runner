@@ -60,13 +60,13 @@ while True:
     # Out of 1000 reads, how many will fail
     read_error_rates = {
         "old": 30,
-        "new": 5
+        "new": 11
         }
 
     # Out of 1000 writes, how many will fail
     write_error_rates = {
         "old": 20,
-        "new": 2
+        "new": 10
         }
 
     read_result = migrator.read(FLAG_KEY, context, default_stage, read_error_rates)
