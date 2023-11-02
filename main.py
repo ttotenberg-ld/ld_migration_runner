@@ -1,107 +1,74 @@
-import blessed
 from dotenv import load_dotenv
 import json
 import ldclient
-from ldclient.config import Config
+from ldclient import Config, ExecutionOrder, MigratorBuilder, Result, Stage
+import logging
 import os
-from prettytable import PrettyTable as pt
+import random
+import sys
 import time
-import unicodedata
-from utils.create_context import *
+from utils.create_context import create_user_context
+from utils.migration_functions import *
 
 '''
 Get environment variables
 '''
 load_dotenv()
 
-'''
-Create a terminal and clear it
-'''
-term = blessed.Terminal()
-print(term.clear)
-
 
 '''
-Set sdk_key and feature_flag_key to your LaunchDarkly keys, then initialize the LD client. These keys are pulled from your Replit environment variables, AKA secrets.
+Set sdk_key and feature_flag_key to your LaunchDarkly environment, then initialize the LD client.
 '''
-sdk_key = os.environ.get('SDK_KEY')
-feature_flag_key = os.environ.get('FLAG_KEY')
-# sdk_key = "sdk-f736700e-5e55-4221-a045-3dfc960e01ef"
-# feature_flag_key = "release-new-ui"
-ldclient.set_config(Config(sdk_key,send_events=False))
-
+SDK_KEY = os.environ.get('SDK_KEY')
+FLAG_KEY = os.environ.get('FLAG_KEY')
+ldclient.set_config(Config(SDK_KEY))
 
 '''
-Define symbols for the table
+Start logging!
 '''
-true_icon = unicodedata.lookup('WHITE HEAVY CHECK MARK')
-false_icon = unicodedata.lookup('CROSS MARK')
+ld_logger = logging.getLogger("ldclient")
+ld_logger.setLevel(logging.ERROR)
+
+handler = logging.StreamHandler(sys.stdout)
+handler.setLevel(logging.ERROR)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+handler.setFormatter(formatter)
+ld_logger.addHandler(handler)
 
 
 '''
-Create fake targets for this exercise
+Construct migrator builder
 '''
-def create_contexts():
-    num_contexts = 2000
-    contexts_array = []
-    for i in range(num_contexts):
-        context = create_multi_context()
-        json.dumps(contexts_array.append(context))
-        with open('data/contexts.json', 'w') as f:
-            f.write(str(contexts_array))
+builder = MigratorBuilder(ldclient.get())
 
-'''
-Add targets to the table
-'''
-def add_targets_to_table(data):
-    context_table = []
+# Define which two functions to call for read and writes, and how to check for consistency
+builder.read(read_old(), read_new(), consistency_check())
+builder.write(write_old(), write_new())
 
-    for i in data:
-        feature = ldclient.get().variation(feature_flag_key, i, False)
-        if feature:
-            feature = true_icon
-        else:
-            feature = false_icon
+builder.read_execution_order(ExecutionOrder.PARALLEL)
 
-        context_table.append(feature)
-        
-    return context_table
+default_stage = Stage.OFF
+migrator = builder.build()
 
 
 '''
-Clears the terminal, then renders the table
+Main loop to execute reads and writes
 '''
-def render_table(table):
-    with term.hidden_cursor():
-        print(term.home + term.clear, end='')
-        # print(table)
-        for i in table:
-            print(i,end = '')
+while True:
+    context = create_user_context()
 
+    # Out of 1000 reads, how many will fail
+    read_error_rates = {
+        "old": 30,
+        "new": 5
+        }
 
-'''
-OK, word of warning: Everything below is pretty hacky. :)
-Ideally, I wanted to subscribe to flag changes and render the table only when there was an update. However, once I was mostly done creating this, I realized the Python SDK doesn't have that functionality yet! (as of fall 2022)
+    # Out of 1000 writes, how many will fail
+    write_error_rates = {
+        "old": 20,
+        "new": 2
+        }
 
-https://docs.launchdarkly.com/sdk/features/flag-changes
+    read_result = migrator.read(FLAG_KEY, context, default_stage, read_rates)
 
-So instead, I'm saving an array of trues/falses for each target user, updating that array multiple times per second based on the latest targeting data from LaunchDarkly, and re-rendering the table if that has been updated.
-
-Don't judge me! :) It's hacky but it works!
-'''
-if __name__ == '__main__':
-    # Uncomment the line below and rerun the script if you want to generate new targets
-    # create_contexts()
-    data = json.load(open("data/contexts.json"))
-    target_array = [False]
-    while True:
-        new_target_array = []
-        for i in data:
-            feature = ldclient.get().variation(feature_flag_key, i, False)
-            new_target_array.append(feature)
-        if target_array != new_target_array:
-            table = add_targets_to_table(data)
-            render_table(table)
-            target_array = new_target_array
-            new_target_array = []
-        time.sleep(.1)
+    write_result = migrator.write(FLAG_KEY, context, default_stage, write_rates)

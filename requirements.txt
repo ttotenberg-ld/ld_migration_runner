@@ -1,7 +1,5 @@
-blessed==1.20.0
 Faker==18.5.1
-launchdarkly_server_sdk==8.1.1
+launchdarkly_server_sdk==9.0.1
 ldclient==0.0.1
 names==0.3.0
-prettytable==3.9.0
 python-dotenv==1.0.0
