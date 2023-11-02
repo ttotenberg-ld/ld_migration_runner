@@ -69,6 +69,6 @@ while True:
         "new": 2
         }
 
-    read_result = migrator.read(FLAG_KEY, context, default_stage, read_rates)
+    read_result = migrator.read(FLAG_KEY, context, default_stage, read_error_rates)
 
-    write_result = migrator.write(FLAG_KEY, context, default_stage, write_rates)
+    write_result = migrator.write(FLAG_KEY, context, default_stage, write_error_rates)
