@@ -41,8 +41,8 @@ def read_new():
         time.sleep(.2)
         if value >= new_rate:
             # Add an additional check on succesful read to determine whether this will be consistent with the other read
-            consistency_value = random.randint(1, 100)
-            if consistency_value <= 99.7:
+            consistency_value = random.randint(1, 1000)
+            if consistency_value <= 998:
                 print("NEW READ: CONSISTENT")
                 return Result.success("READ: CONSISTENT")
             else: 
@@ -61,8 +61,8 @@ def read_old():
         time.sleep(.4)
         if value >= old_rate:
             # Add an additional check on succesful read to determine whether this will be consistent with the other read
-            consistency_value = random.randint(1, 100)
-            if consistency_value <= 99.7:
+            consistency_value = random.randint(1, 1000)
+            if consistency_value <= 998:
                 print("OLD READ: CONSISTENT")
                 return Result.success("READ: CONSISTENT")
             else: 
