@@ -7,7 +7,7 @@ import os
 import random
 import sys
 import time
-from utils.create_context import create_user_context
+from utils.create_context import create_multi_context
 from utils.migration_functions import *
 
 '''
@@ -55,7 +55,7 @@ migrator = builder.build()
 Main loop to execute reads and writes
 '''
 while True:
-    context = create_user_context()
+    context = create_multi_context()
 
     # Out of 1000 reads, how many will fail
     read_error_rates = {
@@ -72,3 +72,5 @@ while True:
     read_result = migrator.read(FLAG_KEY, context, default_stage, read_error_rates)
 
     write_result = migrator.write(FLAG_KEY, context, default_stage, write_error_rates)
+
+    time.sleep(10)
